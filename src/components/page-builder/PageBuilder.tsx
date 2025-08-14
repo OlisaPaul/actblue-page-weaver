@@ -1,3 +1,9 @@
+
+import { useWebinyPages } from '../../hooks/useWebinyPages';
+import { useAuth } from '../../contexts/AuthContext';
+import { Input } from '@/components/ui/input';
+import { Save, FolderOpen } from 'lucide-react';
+
 import { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { ComponentLibrary } from './ComponentLibrary';
@@ -14,6 +20,12 @@ export interface PageComponent {
 }
 
 const PageBuilder = () => {
+  const { user, isAuthenticated } = useAuth();
+  const { savePage, getUserPages, loading } = useWebinyPages();
+  const [pageTitle, setPageTitle] = useState('Untitled Campaign Page');
+  const [currentPageId, setCurrentPageId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
   const [components, setComponents] = useState<PageComponent[]>([
     {
       id: '1',
@@ -103,6 +115,26 @@ const PageBuilder = () => {
     }
   };
 
+  const handleSavePage = async () => {
+    if (!isAuthenticated) {
+      alert('Please log in to save pages');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const savedPage = await savePage(pageTitle, components, currentPageId || undefined);
+      setCurrentPageId(savedPage.id);
+      console.log('Page saved successfully!');
+    } catch (error) {
+      console.error('Failed to save page:', error);
+      alert('Failed to save page');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
   return (
     <div className="h-screen flex bg-builder-canvas">
       {/* Sidebar - Component Library */}
@@ -115,6 +147,27 @@ const PageBuilder = () => {
             Build your campaign page
           </p>
         </div>
+        {isAuthenticated && (
+          <div className="p-4 border-t border-border mt-4">
+            <div className="space-y-3">
+              <Input
+                value={pageTitle}
+                onChange={(e) => setPageTitle(e.target.value)}
+                placeholder="Page title"
+                className="text-sm"
+              />
+              <Button
+                onClick={handleSavePage}
+                disabled={isSaving}
+                className="w-full"
+                size="sm"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? 'Saving...' : 'Save Page'}
+              </Button>
+            </div>
+          </div>
+        )}
         
         <ComponentLibrary onAddComponent={addComponent} />
       </div>

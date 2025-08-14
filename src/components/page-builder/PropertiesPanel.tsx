@@ -1,4 +1,5 @@
 import { PageComponent } from './PageBuilder';
+import { useWebinyFiles } from '../../hooks/useWebinyFiles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
   const [uploadError, setUploadError] = useState<string>('');
   const [dragActive, setDragActive] = useState(false);
   const previousBlobUrl = useRef<string>('');
+  const { uploadImage } = useWebinyFiles();
 
   // Cleanup blob URLs when component unmounts or changes
   useEffect(() => {
@@ -65,12 +67,70 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
     return { valid: true };
   };
 
-  const handleFileUpload = async (file: File) => {
+  // const handleFileUpload = async (file: File) => {
+  //   setUploadStatus('uploading');
+  //   setUploadError('');
+
+  //   try {
+  //     // Validate file
+  //     const validation = validateFile(file);
+  //     if (!validation.valid) {
+  //       setUploadStatus('error');
+  //       setUploadError(validation.error || 'Invalid file');
+  //       return;
+  //     }
+
+  //     // Clean up previous blob URL
+  //     if (previousBlobUrl.current && previousBlobUrl.current.startsWith('blob:')) {
+  //       console.log('Revoking previous blob URL:', previousBlobUrl.current);
+  //       URL.revokeObjectURL(previousBlobUrl.current);
+  //     }
+
+  //     // Create new blob URL
+  //     const imageUrl = URL.createObjectURL(file);
+  //     console.log('Generated new blob URL:', imageUrl);
+      
+  //     // Store reference for cleanup
+  //     previousBlobUrl.current = imageUrl;
+
+  //     // Update component with new image (atomic update to prevent race conditions)
+  //     const newAlt = file.name.split('.')[0];
+  //     console.log('Updating component with new blob URL:', imageUrl);
+  //     console.log('Updating component with new alt text:', newAlt);
+      
+  //     // Update both imageUrl and alt in a single atomic operation
+  //     onUpdate({
+  //       content: {
+  //         ...component.content,
+  //         imageUrl: imageUrl,
+  //         alt: newAlt
+  //       }
+  //     });
+      
+  //     console.log('Component content after atomic update should be:', {
+  //       ...component.content,
+  //       imageUrl: imageUrl,
+  //       alt: newAlt
+  //     });
+
+  //     setUploadStatus('success');
+      
+  //     // Reset success status after 3 seconds
+  //     setTimeout(() => {
+  //       setUploadStatus(prev => prev === 'success' ? 'idle' : prev);
+  //     }, 3000);
+
+  //   } catch (error) {
+  //     console.error('File upload error:', error);
+  //     setUploadStatus('error');
+  //     setUploadError('Failed to process file. Please try again.');
+  //   }
+  // };
+const handleFileUpload = async (file: File) => {
     setUploadStatus('uploading');
     setUploadError('');
 
     try {
-      // Validate file
       const validation = validateFile(file);
       if (!validation.valid) {
         setUploadStatus('error');
@@ -78,25 +138,13 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
         return;
       }
 
-      // Clean up previous blob URL
-      if (previousBlobUrl.current && previousBlobUrl.current.startsWith('blob:')) {
-        console.log('Revoking previous blob URL:', previousBlobUrl.current);
-        URL.revokeObjectURL(previousBlobUrl.current);
-      }
-
-      // Create new blob URL
-      const imageUrl = URL.createObjectURL(file);
-      console.log('Generated new blob URL:', imageUrl);
-      
-      // Store reference for cleanup
-      previousBlobUrl.current = imageUrl;
-
-      // Update component with new image (atomic update to prevent race conditions)
+      // Upload to Webiny instead of creating blob URL
+      const imageUrl = await uploadImage(file);
       const newAlt = file.name.split('.')[0];
-      console.log('Updating component with new blob URL:', imageUrl);
-      console.log('Updating component with new alt text:', newAlt);
       
-      // Update both imageUrl and alt in a single atomic operation
+      console.log('Uploaded to Webiny:', imageUrl);
+      
+      // Update component with Webiny URL
       onUpdate({
         content: {
           ...component.content,
@@ -104,16 +152,8 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
           alt: newAlt
         }
       });
-      
-      console.log('Component content after atomic update should be:', {
-        ...component.content,
-        imageUrl: imageUrl,
-        alt: newAlt
-      });
 
       setUploadStatus('success');
-      
-      // Reset success status after 3 seconds
       setTimeout(() => {
         setUploadStatus(prev => prev === 'success' ? 'idle' : prev);
       }, 3000);
@@ -121,10 +161,10 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
     } catch (error) {
       console.error('File upload error:', error);
       setUploadStatus('error');
-      setUploadError('Failed to process file. Please try again.');
+      setUploadError('Failed to upload file to Webiny');
     }
   };
-
+  
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragActive(false);
