@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Type, DollarSign, CreditCard, Image, FileText } from 'lucide-react';
+import { X, Type, DollarSign, CreditCard, Image, FileText, Upload, ImageIcon } from 'lucide-react';
 
 interface PropertiesPanelProps {
   component: PageComponent;
@@ -12,6 +12,24 @@ interface PropertiesPanelProps {
 }
 
 export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPanelProps) => {
+  const handleFileUpload = (file: File) => {
+    const imageUrl = URL.createObjectURL(file);
+    updateContent('imageUrl', imageUrl);
+    updateContent('alt', file.name.split('.')[0]);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files);
+    const imageFile = files.find(file => file.type.startsWith('image/'));
+    if (imageFile) {
+      handleFileUpload(imageFile);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
   const getIcon = () => {
     switch (component.type) {
       case 'logo': return Image;
@@ -40,7 +58,65 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
         return (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="imageUrl">Image URL</Label>
+              <Label>Upload Logo</Label>
+              <div 
+                className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors"
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  {component.content.imageUrl ? (
+                    <div className="relative">
+                      <img 
+                        src={component.content.imageUrl} 
+                        alt="Preview" 
+                        className="max-w-20 max-h-20 object-contain rounded"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full"
+                        onClick={() => updateContent('imageUrl', '')}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <ImageIcon className="w-12 h-12 text-muted-foreground" />
+                  )}
+                  
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Drag and drop an image here, or
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById('logo-upload')?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload File
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <input
+                  id="logo-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="imageUrl">Or enter Image URL</Label>
               <Input
                 id="imageUrl"
                 value={component.content.imageUrl || ''}
@@ -48,6 +124,7 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
                 placeholder="https://example.com/logo.jpg"
               />
             </div>
+            
             <div>
               <Label htmlFor="alt">Alt Text</Label>
               <Input
@@ -57,6 +134,7 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
                 placeholder="Campaign logo"
               />
             </div>
+            
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="width">Width</Label>
