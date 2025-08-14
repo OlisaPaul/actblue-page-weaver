@@ -35,6 +35,7 @@ export const ComponentRenderer = ({
   const renderComponent = () => {
     switch (component.type) {
       case 'logo':
+        console.log('Rendering logo component:', component.content);
         return (
           <div className="text-center">
             <div className="inline-block p-4 border-2 border-primary rounded-lg bg-gradient-subtle">
@@ -47,6 +48,8 @@ export const ComponentRenderer = ({
                     width: component.content.width ? `${component.content.width}px` : 'auto',
                     height: component.content.height ? `${component.content.height}px` : 'auto'
                   }}
+                  onLoad={() => console.log('Logo image loaded successfully')}
+                  onError={(e) => console.error('Logo image failed to load:', e)}
                 />
               ) : (
                 <div className="w-64 h-32 bg-primary/10 rounded flex items-center justify-center">

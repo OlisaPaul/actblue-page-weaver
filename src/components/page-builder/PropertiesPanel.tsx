@@ -13,7 +13,9 @@ interface PropertiesPanelProps {
 
 export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPanelProps) => {
   const handleFileUpload = (file: File) => {
+    console.log('File uploaded:', file.name, file.size, file.type);
     const imageUrl = URL.createObjectURL(file);
+    console.log('Generated blob URL:', imageUrl);
     updateContent('imageUrl', imageUrl);
     updateContent('alt', file.name.split('.')[0]);
   };
@@ -30,6 +32,16 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
+
+  const updateContent = (key: string, value: any) => {
+    console.log('Updating content:', key, value);
+    onUpdate({
+      content: {
+        ...component.content,
+        [key]: value
+      }
+    });
+  };
   const getIcon = () => {
     switch (component.type) {
       case 'logo': return Image;
@@ -43,14 +55,6 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
 
   const Icon = getIcon();
 
-  const updateContent = (key: string, value: any) => {
-    onUpdate({
-      content: {
-        ...component.content,
-        [key]: value
-      }
-    });
-  };
 
   const renderProperties = () => {
     switch (component.type) {
