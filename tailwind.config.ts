@@ -26,7 +26,19 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					dark: 'hsl(var(--primary-dark))'
+				},
+				campaign: {
+					red: 'hsl(var(--campaign-red))',
+					'red-foreground': 'hsl(var(--campaign-red-foreground))'
+				},
+				builder: {
+					sidebar: 'hsl(var(--builder-sidebar))',
+					'sidebar-foreground': 'hsl(var(--builder-sidebar-foreground))',
+					canvas: 'hsl(var(--builder-canvas))',
+					component: 'hsl(var(--builder-component))',
+					hover: 'hsl(var(--builder-hover))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -67,6 +79,19 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			backgroundImage: {
+				'gradient-patriot': 'var(--gradient-patriot)',
+				'gradient-campaign': 'var(--gradient-campaign)',
+				'gradient-subtle': 'var(--gradient-subtle)'
+			},
+			boxShadow: {
+				'campaign': 'var(--shadow-campaign)',
+				'donation': 'var(--shadow-donation)',
+				'card': 'var(--shadow-card)'
+			},
+			transitionProperty: {
+				'campaign': 'var(--transition-campaign)'
 			},
 			keyframes: {
 				'accordion-down': {

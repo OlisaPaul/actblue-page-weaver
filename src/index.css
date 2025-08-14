@@ -17,8 +17,14 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Political Campaign Theme - Deep Blue Primary */
+    --primary: 213 94% 68%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 213 94% 48%;
+
+    /* Campaign Red for Accents */
+    --campaign-red: 0 84% 60%;
+    --campaign-red-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -34,7 +40,27 @@ All colors MUST be HSL.
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 213 94% 68%;
+
+    /* Page Builder Theme */
+    --builder-sidebar: 220 13% 18%;
+    --builder-sidebar-foreground: 210 40% 98%;
+    --builder-canvas: 210 20% 98%;
+    --builder-component: 0 0% 100%;
+    --builder-hover: 213 94% 68%;
+
+    /* Political Gradients */
+    --gradient-patriot: linear-gradient(135deg, hsl(213 94% 68%), hsl(0 84% 60%));
+    --gradient-campaign: linear-gradient(180deg, hsl(213 94% 68%), hsl(213 94% 48%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 20% 98%));
+
+    /* Professional Shadows */
+    --shadow-campaign: 0 10px 30px -10px hsl(213 94% 68% / 0.3);
+    --shadow-donation: 0 4px 20px -4px hsl(213 94% 68% / 0.25);
+    --shadow-card: 0 2px 10px -2px hsl(220 13% 18% / 0.1);
+
+    /* Animations */
+    --transition-campaign: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.5rem;
 
