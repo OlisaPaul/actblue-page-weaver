@@ -38,9 +38,21 @@ export const ComponentRenderer = ({
         return (
           <div className="text-center">
             <div className="inline-block p-4 border-2 border-primary rounded-lg bg-gradient-subtle">
-              <div className="w-64 h-32 bg-primary/10 rounded flex items-center justify-center">
-                <span className="text-primary font-bold text-lg">CAMPAIGN LOGO</span>
-              </div>
+              {component.content.imageUrl ? (
+                <img
+                  src={component.content.imageUrl}
+                  alt={component.content.alt || 'Campaign logo'}
+                  className="max-w-64 max-h-32 object-contain rounded"
+                  style={{
+                    width: component.content.width ? `${component.content.width}px` : 'auto',
+                    height: component.content.height ? `${component.content.height}px` : 'auto'
+                  }}
+                />
+              ) : (
+                <div className="w-64 h-32 bg-primary/10 rounded flex items-center justify-center">
+                  <span className="text-primary font-bold text-lg">CAMPAIGN LOGO</span>
+                </div>
+              )}
             </div>
           </div>
         );
