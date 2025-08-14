@@ -1,7 +1,8 @@
 import { PageComponent } from './PageBuilder';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 interface ComponentRendererProps {
   component: PageComponent;
@@ -21,6 +22,16 @@ export const ComponentRenderer = ({
   const [customAmount, setCustomAmount] = useState('');
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [isMonthly, setIsMonthly] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  // Reset image states when the imageUrl changes
+  useEffect(() => {
+    if (component.type === 'logo' && component.content.imageUrl) {
+      setImageLoading(true);
+      setImageError(false);
+    }
+  }, [component.content.imageUrl, component.type]);
 
   const handleAmountSelect = (amount: number) => {
     setSelectedAmount(selectedAmount === amount ? null : amount);
@@ -32,30 +43,65 @@ export const ComponentRenderer = ({
     setSelectedAmount(null);
   };
 
-  const renderComponent = () => {
-    switch (component.type) {
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    setImageLoading(false);
+    setImageError(true);
+    console.error('Logo image failed to load:', e.currentTarget.src);
+  };
+
+  const renderImageWithFallback = () => {
+    if (!component.content.imageUrl) {
+      return (
+        <div className="w-64 h-32 bg-primary/10 rounded flex items-center justify-center">
+          <span className="text-primary font-bold text-lg">CAMPAIGN LOGO</span>
+        </div>
+      );
+    }
+
+    if (imageError) {
+      return (
+        <div className="w-64 h-32 bg-destructive/10 border-2 border-destructive/20 rounded flex flex-col items-center justify-center gap-2">
+          <AlertTriangle className="w-6 h-6 text-destructive" />
+          <span className="text-destructive font-medium text-sm">Image failed to load</span>
+          <span className="text-destructive/70 text-xs">Check image URL or upload a new file</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative">
+        {imageLoading && (
+          <div className="w-64 h-32 bg-muted/50 rounded flex items-center justify-center absolute inset-0 z-10">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          </div>
+        )}
+        <img
+          src={component.content.imageUrl}
+          alt={component.content.alt || 'Campaign logo'}
+          className="max-w-64 max-h-32 object-contain rounded"
+          style={{
+            width: component.content.width ? `${component.content.width}px` : 'auto',
+            height: component.content.height ? `${component.content.height}px` : 'auto'
+          }}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+        />
+      </div>
+    );
+  };
+const renderComponent = () => {
+  switch (component.type) {
       case 'logo':
-        console.log('Rendering logo component:', component.content);
+        console.log('Rendering logo component with imageUrl:', component.content.imageUrl);
         return (
           <div className="text-center">
             <div className="inline-block p-4 border-2 border-primary rounded-lg bg-gradient-subtle">
-              {component.content.imageUrl ? (
-                <img
-                  src={component.content.imageUrl}
-                  alt={component.content.alt || 'Campaign logo'}
-                  className="max-w-64 max-h-32 object-contain rounded"
-                  style={{
-                    width: component.content.width ? `${component.content.width}px` : 'auto',
-                    height: component.content.height ? `${component.content.height}px` : 'auto'
-                  }}
-                  onLoad={() => console.log('Logo image loaded successfully')}
-                  onError={(e) => console.error('Logo image failed to load:', e)}
-                />
-              ) : (
-                <div className="w-64 h-32 bg-primary/10 rounded flex items-center justify-center">
-                  <span className="text-primary font-bold text-lg">CAMPAIGN LOGO</span>
-                </div>
-              )}
+              {renderImageWithFallback()}
             </div>
           </div>
         );

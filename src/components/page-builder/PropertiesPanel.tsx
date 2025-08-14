@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Type, DollarSign, CreditCard, Image, FileText, Upload, ImageIcon } from 'lucide-react';
+import { X, Type, DollarSign, CreditCard, Image, FileText, Upload, ImageIcon, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
 interface PropertiesPanelProps {
   component: PageComponent;
@@ -12,35 +13,216 @@ interface PropertiesPanelProps {
 }
 
 export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPanelProps) => {
-  const handleFileUpload = (file: File) => {
-    console.log('File uploaded:', file.name, file.size, file.type);
-    const imageUrl = URL.createObjectURL(file);
-    console.log('Generated blob URL:', imageUrl);
-    updateContent('imageUrl', imageUrl);
-    updateContent('alt', file.name.split('.')[0]);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [uploadError, setUploadError] = useState<string>('');
+  const [dragActive, setDragActive] = useState(false);
+  const previousBlobUrl = useRef<string>('');
+
+  // Cleanup blob URLs when component unmounts or changes
+  useEffect(() => {
+    return () => {
+      if (previousBlobUrl.current && previousBlobUrl.current.startsWith('blob:')) {
+        console.log('Cleaning up blob URL:', previousBlobUrl.current);
+        URL.revokeObjectURL(previousBlobUrl.current);
+      }
+    };
+  }, []);
+
+  const validateFile = (file: File): { valid: boolean; error?: string } => {
+    console.log('Validating file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: new Date(file.lastModified).toISOString()
+    });
+
+    // Check file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!validTypes.includes(file.type)) {
+      return {
+        valid: false,
+        error: `Invalid file type. Please upload: ${validTypes.map(t => t.split('/')[1]).join(', ')}`
+      };
+    }
+
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      return {
+        valid: false,
+        error: `File too large. Maximum size is ${maxSize / (1024 * 1024)}MB`
+      };
+    }
+
+    // Check if file is not corrupted (basic check)
+    if (file.size === 0) {
+      return {
+        valid: false,
+        error: 'File appears to be corrupted or empty'
+      };
+    }
+
+    return { valid: true };
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setUploadStatus('uploading');
+    setUploadError('');
+
+    try {
+      // Validate file
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        setUploadStatus('error');
+        setUploadError(validation.error || 'Invalid file');
+        return;
+      }
+
+      // Clean up previous blob URL
+      if (previousBlobUrl.current && previousBlobUrl.current.startsWith('blob:')) {
+        console.log('Revoking previous blob URL:', previousBlobUrl.current);
+        URL.revokeObjectURL(previousBlobUrl.current);
+      }
+
+      // Create new blob URL
+      const imageUrl = URL.createObjectURL(file);
+      console.log('Generated new blob URL:', imageUrl);
+      
+      // Store reference for cleanup
+      previousBlobUrl.current = imageUrl;
+
+      // Update component with new image (atomic update to prevent race conditions)
+      const newAlt = file.name.split('.')[0];
+      console.log('Updating component with new blob URL:', imageUrl);
+      console.log('Updating component with new alt text:', newAlt);
+      
+      // Update both imageUrl and alt in a single atomic operation
+      onUpdate({
+        content: {
+          ...component.content,
+          imageUrl: imageUrl,
+          alt: newAlt
+        }
+      });
+      
+      console.log('Component content after atomic update should be:', {
+        ...component.content,
+        imageUrl: imageUrl,
+        alt: newAlt
+      });
+
+      setUploadStatus('success');
+      
+      // Reset success status after 3 seconds
+      setTimeout(() => {
+        setUploadStatus(prev => prev === 'success' ? 'idle' : prev);
+      }, 3000);
+
+    } catch (error) {
+      console.error('File upload error:', error);
+      setUploadStatus('error');
+      setUploadError('Failed to process file. Please try again.');
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setDragActive(false);
+    
     const files = Array.from(e.dataTransfer.files);
     const imageFile = files.find(file => file.type.startsWith('image/'));
-    if (imageFile) {
-      handleFileUpload(imageFile);
+    
+    if (!imageFile) {
+      setUploadStatus('error');
+      setUploadError('Please drop an image file');
+      return;
     }
+    
+    if (files.length > 1) {
+      setUploadStatus('error');
+      setUploadError('Please drop only one file at a time');
+      return;
+    }
+
+    handleFileUpload(imageFile);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(false);
   };
 
   const updateContent = (key: string, value: any) => {
     console.log('Updating content:', key, value);
+    
+    // If updating imageUrl and it's a manual URL change, reset upload status
+    if (key === 'imageUrl' && typeof value === 'string' && !value.startsWith('blob:')) {
+      setUploadStatus('idle');
+      setUploadError('');
+      
+      // Clean up any existing blob URL
+      if (previousBlobUrl.current && previousBlobUrl.current.startsWith('blob:')) {
+        console.log('Cleaning up blob URL due to manual URL change');
+        URL.revokeObjectURL(previousBlobUrl.current);
+        previousBlobUrl.current = '';
+      }
+    }
+
     onUpdate({
       content: {
         ...component.content,
         [key]: value
       }
     });
+  };
+
+  const getUploadAreaClassName = () => {
+    let baseClass = "border-2 border-dashed rounded-lg p-6 text-center transition-colors";
+    
+    if (dragActive) {
+      baseClass += " border-primary bg-primary/5";
+    } else if (uploadStatus === 'error') {
+      baseClass += " border-destructive/50 bg-destructive/5";
+    } else if (uploadStatus === 'success') {
+      baseClass += " border-green-500/50 bg-green-50";
+    } else {
+      baseClass += " border-border hover:border-primary/50";
+    }
+    
+    return baseClass;
+  };
+
+  const renderUploadStatus = () => {
+    switch (uploadStatus) {
+      case 'uploading':
+        return (
+          <div className="flex items-center gap-2 text-primary">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+            <span className="text-sm">Uploading...</span>
+          </div>
+        );
+      case 'success':
+        return (
+          <div className="flex items-center gap-2 text-green-600">
+            <CheckCircle className="w-4 h-4" />
+            <span className="text-sm">Upload successful!</span>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="w-4 h-4" />
+            <span className="text-sm">{uploadError}</span>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
   const getIcon = () => {
     switch (component.type) {
@@ -63,24 +245,36 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
           <div className="space-y-4">
             <div>
               <Label>Upload Logo</Label>
-              <div 
-                className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors"
+              <div
+                className={getUploadAreaClassName()}
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
               >
                 <div className="flex flex-col items-center gap-3">
                   {component.content.imageUrl ? (
                     <div className="relative">
-                      <img 
-                        src={component.content.imageUrl} 
-                        alt="Preview" 
+                      <img
+                        key={component.content.imageUrl} // Force re-render when URL changes
+                        src={component.content.imageUrl}
+                        alt="Preview"
                         className="max-w-20 max-h-20 object-contain rounded"
+                        onLoad={() => console.log('Properties panel preview loaded:', component.content.imageUrl)}
+                        onError={(e) => console.error('Properties panel preview failed to load:', e.currentTarget.src)}
                       />
                       <Button
                         variant="destructive"
                         size="sm"
                         className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full"
-                        onClick={() => updateContent('imageUrl', '')}
+                        onClick={() => {
+                          // Clean up blob URL when removing image
+                          if (component.content.imageUrl?.startsWith('blob:')) {
+                            URL.revokeObjectURL(component.content.imageUrl);
+                          }
+                          updateContent('imageUrl', '');
+                          setUploadStatus('idle');
+                          setUploadError('');
+                        }}
                       >
                         <X className="w-3 h-3" />
                       </Button>
@@ -93,16 +287,21 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
                     <p className="text-sm text-muted-foreground">
                       Drag and drop an image here, or
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 items-center">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => document.getElementById('logo-upload')?.click()}
+                        disabled={uploadStatus === 'uploading'}
                       >
                         <Upload className="w-4 h-4 mr-2" />
-                        Upload File
+                        {uploadStatus === 'uploading' ? 'Uploading...' : 'Upload File'}
                       </Button>
+                      {renderUploadStatus()}
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Supports: JPEG, PNG, GIF, WebP, SVG (max 10MB)
+                    </p>
                   </div>
                 </div>
                 
@@ -113,7 +312,11 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleFileUpload(file);
+                    if (file) {
+                      handleFileUpload(file);
+                      // Reset input so same file can be selected again
+                      e.target.value = '';
+                    }
                   }}
                 />
               </div>
@@ -126,7 +329,18 @@ export const PropertiesPanel = ({ component, onUpdate, onClose }: PropertiesPane
                 value={component.content.imageUrl || ''}
                 onChange={(e) => updateContent('imageUrl', e.target.value)}
                 placeholder="https://example.com/logo.jpg"
+                disabled={uploadStatus === 'uploading'}
+                onFocus={(e) => {
+                  // Clear default placeholder URL when user starts typing
+                  if (component.content.imageUrl === '/placeholder.svg') {
+                    updateContent('imageUrl', '');
+                    e.target.value = '';
+                  }
+                }}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Enter a direct URL to an image file
+              </p>
             </div>
             
             <div>

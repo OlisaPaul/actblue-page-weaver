@@ -19,7 +19,7 @@ const PageBuilder = () => {
       id: '1',
       type: 'logo',
       content: { 
-        imageUrl: '/api/placeholder/300/150',
+        imageUrl: '/placeholder.svg',
         alt: 'Campaign Logo',
         width: 300,
         height: 150
@@ -97,7 +97,7 @@ const PageBuilder = () => {
       case 'paymentOptions':
         return { methods: ['credit'] };
       case 'logo':
-        return { imageUrl: '/api/placeholder/200/100', alt: 'Logo', width: 200, height: 100 };
+        return { imageUrl: '/placeholder.svg', alt: 'Logo', width: 200, height: 100 };
       default:
         return {};
     }
