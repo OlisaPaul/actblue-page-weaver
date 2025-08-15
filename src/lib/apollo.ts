@@ -3,7 +3,7 @@ import { setContext } from '@apollo/client/link/context';
 import { WEBINY_CONFIG } from '../config/webiny';
 
 const httpLink = createHttpLink({
-  uri: `${WEBINY_CONFIG.apiUrl}/manage/${WEBINY_CONFIG.locale}`
+  uri: `${WEBINY_CONFIG.apiUrl}/graphql`
 });
 
 const authLink = setContext((_, { headers }) => {

@@ -1,3 +1,4 @@
+import { loginUser } from '../services/authService';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
@@ -16,7 +17,7 @@ interface JwtPayload {
 
 interface AuthContextType {
   user: User | null;
-  login: (token: string) => void;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -43,21 +44,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = (token: string) => {
-    try {
-      localStorage.setItem('webiny-token', token);
-      const decoded = jwtDecode<JwtPayload>(token);
-      setUser({
-        id: decoded.sub,
-        email: decoded.email,
-        name: decoded.name || decoded.email
-      });
-    } catch (error) {
-      console.error('Failed to decode token during login:', error);
-      localStorage.removeItem('webiny-token');
-      throw new Error('Invalid token provided');
-    }
-  };
+  const login = async (email: string, password: string) => {
+  try {
+    const data = await loginUser(email, password);
+    const token = data.token;
+
+    localStorage.setItem('webiny-token', token);
+
+    const decoded = jwtDecode<JwtPayload>(token);
+    setUser({
+      id: decoded.sub,
+      email: decoded.email,
+      name: decoded.name || decoded.email,
+    });
+  } catch (error) {
+    console.error('Login failed:', error);
+    localStorage.removeItem('webiny-token');
+    throw error;
+  }
+};
 
   const logout = () => {
     localStorage.removeItem('webiny-token');
@@ -77,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {

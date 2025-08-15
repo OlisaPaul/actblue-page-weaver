@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 export const CREATE_CAMPAIGN_PAGE = gql`
   mutation CreateCampaignPage($data: CampaignPageInput!) {
@@ -76,35 +76,73 @@ export const GET_CAMPAIGN_PAGE = gql`
 `;
 
 export const UPLOAD_FILE = gql`
-  mutation UploadFile($data: FileInput!) {
-    createFile(data: $data) {
-      data {
-        id
-        key
-        name
-        src
-        size
-        type
+  mutation UploadFile($data: FmFileCreateInput!) {
+    fileManager {
+      createFile(data: $data) {
+        data {
+          id
+          src
+          name
+          size
+          type
+        }
+        error {
+          code
+          message
+        }
       }
-      error {
-        code
-        message
+    }
+  }
+`;
+
+// graphql/files.ts
+
+export const GET_PRE_SIGNED_POST = gql`
+  query GetPreSignedPost($data: PreSignedPostPayloadInput!) {
+    fileManager {
+      getPreSignedPostPayload(data: $data) {
+        data {
+          data {
+            key
+            policy
+            signature
+            date
+            credential
+            algorithm
+            url
+          }
+          file {
+            id
+            src
+            key
+            size
+            type
+            name
+          }
+        }
+        error {
+          code
+          message
+        }
       }
     }
   }
 `;
 
 export const CREATE_FILE = gql`
-  mutation CreateFile($data: FileCreateInput!) {
+  mutation CreateFile($data: FmFileCreateInput!) {
     fileManager {
       createFile(data: $data) {
         data {
           id
           key
           src
+          size
           type
+          name
         }
         error {
+          code
           message
         }
       }
